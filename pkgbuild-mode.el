@@ -513,9 +513,9 @@ command."
   "Run COMMAND to build a tarball containing all source files."
   (interactive
    (list (read-from-minibuffer "tar command: "
-			       "makepkg -S --skippgpcheck --skipchecksums"
+			       "bash -c "for _i in ${SOURCE[@]} \; do curl ${_i} /var/cache/pacman/src/${_i} \; done"
 			       nil nil '(pkgbuild-tar-history . 1))))
-  (let ((pkgbuild-buffer-name (generate-new-buffer "*src.tar*")))
+  (let ((pkgbuild-buffer-name (generate-new-buffer "tar*")))
     (save-some-buffers (not pkgbuild-ask-about-save) nil)
     (pkgbuild-process-check pkgbuild-buffer-name)
     (display-buffer pkgbuild-buffer-name)
