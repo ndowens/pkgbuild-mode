@@ -515,7 +515,7 @@ command."
    (list (read-from-minibuffer "tar command: "
 			       "makepkg -S --skippgpcheck --skipchecksums"
 			       nil nil '(pkgbuild-tar-history . 1))))
-  (let ((pkgbuild-buffer-name (generate-new-buffer "*tar*")))
+  (let ((pkgbuild-buffer-name (generate-new-buffer "*src.tar*")))
     (save-some-buffers (not pkgbuild-ask-about-save) nil)
     (pkgbuild-process-check pkgbuild-buffer-name)
     (display-buffer pkgbuild-buffer-name)
