@@ -120,11 +120,11 @@
 
 (defconst pkgbuild-mode-menu
   (purecopy '("PKGBUILD"
+	      ["Update checksum"	      pkgbuild-tar		  t]
 	      ["Browse url" pkgbuild-browse-url t]
 	      ["Increase release tag"	 pkgbuild-increase-release-tag t]
 	      "---"
 	      ("Build package"
-	       ["Update checksums"	      pkgbuild-tar		  t]
 	       ["Build binary package"	  pkgbuild-makepkg	       t])
 	      "---"
 	      ["Creates TAGS file"	   pkgbuild-etags	t]
@@ -248,11 +248,6 @@ value of `user-mail-address'."
   :type 'string
   :group 'pkgbuild)
 
-(defcustom pkgbuild-sums-command "makepkg -g 2>/dev/null"
-  "Shell command to generate *sums lines."
-  :type 'string
-  :group 'pkgbuild)
-
 (defcustom pkgbuild-srcinfo-command "makepkg --printsrcinfo 2>/dev/null > .SRCINFO"
   "The shell command to generate .SRCINFO."
   :type 'string
@@ -351,11 +346,6 @@ REPORT-FN is flymake's callback function."
 	      (tramp-make-tramp-file-name method user domain host port name-local))
 	  name-local))))
    locations))
-
-(defun pkgbuild-sums-line ()
-  "Calculate *sums=() line in PKGBUILD."
-  (shell-command-to-string pkgbuild-sums-command))
-
 
 (defun pkgbuild-update-srcinfo ()
   "Update .SRCINFO."
@@ -480,9 +470,9 @@ command."
   "Run COMMAND to build a tarball containing all source files."
   (interactive
    (list (read-from-minibuffer "tar command: "
-			       "bash -c "updpkgsums"
+			       "updpkgsums"
 			       nil nil '(pkgbuild-tar-history . 1))))
-  (let ((pkgbuild-buffer-name (generate-new-buffer "tar*")))
+  (let ((pkgbuild-buffer-name (generate-new-buffer "*tar*")))
     (save-some-buffers (not pkgbuild-ask-about-save) nil)
     (pkgbuild-process-check pkgbuild-buffer-name)
     (display-buffer pkgbuild-buffer-name)
@@ -515,8 +505,6 @@ with no args, if that value is non-nil."
   (set (make-local-variable 'compile-command) pkgbuild-makepkg-command)
   (sh-set-shell "/bin/bash")
   (easy-menu-add pkgbuild-mode-menu)
-  ;; This does not work because makepkg req. saved file
-  (add-hook 'write-file-functions 'pkgbuild-update-sums-line-hook nil t)
   (unless (memq 'pkgbuild-flymkake-check flymake-diagnostic-functions)
     (make-local-variable 'flymake-diagnostic-functions)
     (push 'pkgbuild-flymkake-check flymake-diagnostic-functions))
