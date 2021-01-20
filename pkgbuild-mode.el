@@ -1,4 +1,4 @@
-;;; pkgbuild-mode.el --- Interface to the ArchLinux package manager
+;;; pkgbuild-mode.el --- Interface to the ArtixLinux package manager
 
 ;; Copyright (C) 2005-2021 Juergen Hoetzel
 ;;
@@ -30,7 +30,7 @@
 
 ;;; Commentary:
 
-;; This package provides an interface to the ArchLinux package manager.
+;; This package provides an interface to the ArtixLinux package manager.
 
 ;; Put this in your .emacs file to enable autoloading of pkgbuild-mode
 ;; and auto-recognition of "PKGBUILD" files:
@@ -116,7 +116,7 @@
 (require 'tramp)
 (require 'flymake)
 
-(defconst pkgbuild-mode-version "0.11" "Version of `pkgbuild-mode'.")
+(defconst pkgbuild-mode-version "0.11.1" "Version of `pkgbuild-mode'.")
 
 (defconst pkgbuild-mode-menu
   (purecopy '("PKGBUILD"
@@ -135,7 +135,7 @@
 ;; Local variables
 
 (defgroup pkgbuild nil
-  "pkgbuild mode (ArchLinux Packages)."
+  "pkgbuild mode (ArtixLinux Packages)."
   :prefix "pkgbuild-"
   :group 'languages)
 
@@ -226,8 +226,8 @@ Otherwise, \\[pkgbuild-makepkg] just uses the value of `pkgbuild-makepkg-command
   :type 'boolean
   :group 'pkgbuild)
 
-(defcustom pkgbuild-makepkg-command "makepkg -m -f "
-  "Command to create an ArchLinux package."
+(defcustom pkgbuild-makepkg-command "buildpkg-world "
+  "Command to create an ArtixLinux package."
   :type 'string
   :group 'pkgbuild)
 
