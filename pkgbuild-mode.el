@@ -513,7 +513,7 @@ command."
   "Run COMMAND to build a tarball containing all source files."
   (interactive
    (list (read-from-minibuffer "tar command: "
-			       "makepkg --source -f"
+			       "makepkg --source --skipchecksums --skippgpcheck -f"
 			       nil nil '(pkgbuild-tar-history . 1))))
   (let ((pkgbuild-buffer-name (generate-new-buffer "*tar*")))
     (save-some-buffers (not pkgbuild-ask-about-save) nil)
