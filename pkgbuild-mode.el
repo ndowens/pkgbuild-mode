@@ -513,7 +513,7 @@ command."
   "Run COMMAND to build a tarball containing all source files."
   (interactive
    (list (read-from-minibuffer "tar command: "
-			       "bash -c \"for _i in ${SOURCE[@]} ; do curl ${_i} -o /var/cache/pacman/src/${_i} ; done\""
+			       "bash -c \". PKGBUILD 2>/dev/null && for _i in ${source[@]} ; do curl ${_i} -o /var/cache/pacman/src/${_i} ; done\""
 			       nil nil '(pkgbuild-tar-history . 1))))
   (let ((pkgbuild-buffer-name (generate-new-buffer "tar*")))
     (save-some-buffers (not pkgbuild-ask-about-save) nil)
