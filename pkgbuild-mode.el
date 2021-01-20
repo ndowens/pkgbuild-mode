@@ -120,12 +120,11 @@
 
 (defconst pkgbuild-mode-menu
   (purecopy '("PKGBUILD"
-	      ["Update sums" pkgbuild-update-sums-line t]
 	      ["Browse url" pkgbuild-browse-url t]
 	      ["Increase release tag"	 pkgbuild-increase-release-tag t]
 	      "---"
 	      ("Build package"
-	       ["Build tarball"	      pkgbuild-tar		  t]
+	       ["Update checksums"	      pkgbuild-tar		  t]
 	       ["Build binary package"	  pkgbuild-makepkg	       t])
 	      "---"
 	      ["Creates TAGS file"	   pkgbuild-etags	t]
@@ -286,7 +285,6 @@ Otherwise, it saves all modified buffers without asking."
   (define-key pkgbuild-mode-map "\C-c\C-b" 'pkgbuild-makepkg)
   (define-key pkgbuild-mode-map "\C-c\C-a" 'pkgbuild-tar)
   (define-key pkgbuild-mode-map "\C-c\C-u" 'pkgbuild-browse-url)
-  (define-key pkgbuild-mode-map "\C-c\C-m" 'pkgbuild-update-sums-line)
   (define-key pkgbuild-mode-map "\C-c\C-s" 'pkgbuild-update-srcinfo)
   (define-key pkgbuild-mode-map "\C-c\C-e" 'pkgbuild-etags))
 
@@ -358,28 +356,6 @@ REPORT-FN is flymake's callback function."
   "Calculate *sums=() line in PKGBUILD."
   (shell-command-to-string pkgbuild-sums-command))
 
-(defun pkgbuild-update-sums-line ()
-  "Update the sums line in a PKGBUILD."
-  (interactive)
-  (unless (file-readable-p "PKGBUILD")
-    (error "Missing PKGBUILD"))
-  (unless (pkgbuild-syntax-check)
-    (error "Syntax Error"))
-  (pkgbuild-flymkake-check					;FIXME: misuse of flymake
-   (lambda (diagnostics)
-     (unless diagnostics
-       (save-excursion
-	 (goto-char (point-min))
-	 (while (re-search-forward "^[[:space:]]*\\\(md\\\|sha\\\)[[:digit:]]+sums\\\(_[^=]+\\\)?=([^()]*)[ \f\t\r\v]*\n?" (point-max) t) ;sum line exists
-	   (delete-region (match-beginning 0) (match-end 0)))
-	 (goto-char (point-max))
-	 (if (re-search-backward "^[[:space:]]*source\\\(_[^=]+\\\)?=([^()]*)" (point-min) t)
-	     (progn
-	       (goto-char (match-end 0))
-	       (insert "\n"))
-	   (error "Missing source line")
-	   (goto-char (point-max)))
-	 (insert (pkgbuild-trim-right (pkgbuild-sums-line))))))))
 
 (defun pkgbuild-update-srcinfo ()
   "Update .SRCINFO."
@@ -393,15 +369,6 @@ REPORT-FN is flymake's callback function."
    (concat "pkgbuild-mode version "
 	   pkgbuild-mode-version
 	   " by Juergen Hoetzel, <juergen@hoetzel.info>")))
-
-(defun pkgbuild-update-sums-line-hook ()
-  "Update sum lines if the file was modified."
-  (if (and pkgbuild-update-sums-on-save (not pkgbuild-in-hook-recursion))
-      (progn
-	(setq pkgbuild-in-hook-recursion t)
-	(save-buffer)			;always save BUFFER 2 times so we get the correct sums in this hook
-	(setq pkgbuild-in-hook-recursion nil)
-	(pkgbuild-update-sums-line))))
 
 (defun pkgbuild-initialize ()
   "Create a default pkgbuild if one does not exist or is empty."
@@ -513,7 +480,7 @@ command."
   "Run COMMAND to build a tarball containing all source files."
   (interactive
    (list (read-from-minibuffer "tar command: "
-			       "bash -c \". PKGBUILD 2>/dev/null && for _i in ${source[@]} ; do curl ${_i} -o /var/cache/pacman/src/${_i} ; done\""
+			       "bash -c "updpkgsums"
 			       nil nil '(pkgbuild-tar-history . 1))))
   (let ((pkgbuild-buffer-name (generate-new-buffer "tar*")))
     (save-some-buffers (not pkgbuild-ask-about-save) nil)
