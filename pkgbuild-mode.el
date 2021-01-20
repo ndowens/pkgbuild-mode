@@ -1,4 +1,4 @@
-;;; pkgbuild-mode.el --- Interface to the ArchLinux package manager
+;;; pkgbuild-mode.el --- Interface to the ArtixLinux package manager
 
 ;; Copyright (C) 2005-2021 Juergen Hoetzel
 ;;
@@ -30,7 +30,7 @@
 
 ;;; Commentary:
 
-;; This package provides an interface to the ArchLinux package manager.
+;; This package provides an interface to the ArtixLinux package manager.
 
 ;; Put this in your .emacs file to enable autoloading of pkgbuild-mode
 ;; and auto-recognition of "PKGBUILD" files:
@@ -48,8 +48,8 @@
 ;; Fix PKGBUILD template: Use $srcdir (Thanks amagura)
 
 ;; 0.12
-;; pkgbuild-tar: Use "makepkg --source" instead of using a custom tar command
-;; pkgbuild-tar: Use unique output buffers
+;; pkgbuild-sum: Use "makepkg --source" instead of using a custom tar command
+;; pkgbuild-sum: Use unique output buffers
 
 ;; 0.11
 ;; Support Sources renaming: https://wiki.archlinux.org/index.php/PKGBUILD#source
@@ -60,7 +60,7 @@
 ;; made the calculation of sums generic (use makepkg.conf setting)
 
 ;; 0.9
-;;    fixed `pkgbuild-tar' (empty directory name: thanks Stefan Husmann)
+;;    fixed `pkgbuild-sum' (empty directory name: thanks Stefan Husmann)
 ;;    new custom variable: pkgbuild-template
 ;;    code cleanup
 
@@ -102,7 +102,7 @@
 ;; 0.3
 ;;   Update md5sums line when saving PKGBUILD
 ;;     (Can be disabled via custom variable [pkgbuild-update-md5sums-on-save])
-;;   New interactive function pkgbuild-tar to create Source Tarball (C-c C-a)
+;;   New interactive function pkgbuild-sum to create Source Tarball (C-c C-a)
 ;;     (Usefull for AUR uploads)
 ;;   Insert warn-messages in md5sums line when source files are not present
 ;;   Several bug fixes
@@ -116,17 +116,15 @@
 (require 'tramp)
 (require 'flymake)
 
-(defconst pkgbuild-mode-version "0.11" "Version of `pkgbuild-mode'.")
+(defconst pkgbuild-mode-version "0.11.1" "Version of `pkgbuild-mode'.")
 
 (defconst pkgbuild-mode-menu
   (purecopy '("PKGBUILD"
-	      ["Update sums" pkgbuild-update-sums-line t]
+	      ["Update checksum"	      pkgbuild-sum		  t]
 	      ["Browse url" pkgbuild-browse-url t]
 	      ["Increase release tag"	 pkgbuild-increase-release-tag t]
 	      "---"
-	      ("Build package"
-	       ["Build tarball"	      pkgbuild-tar		  t]
-	       ["Build binary package"	  pkgbuild-makepkg	       t])
+	      ["Build binary package"	  pkgbuild-makepkg	       t]
 	      "---"
 	      ["Creates TAGS file"	   pkgbuild-etags	t]
 	      "---"
@@ -135,7 +133,7 @@
 ;; Local variables
 
 (defgroup pkgbuild nil
-  "pkgbuild mode (ArchLinux Packages)."
+  "pkgbuild mode (ArtixLinux Packages)."
   :prefix "pkgbuild-"
   :group 'languages)
 
@@ -222,12 +220,12 @@ Otherwise, \\[pkgbuild-makepkg] just uses the value of `pkgbuild-makepkg-command
   :group 'pkgbuild)
 
 (defcustom pkgbuild-read-tar-command t
-  "*Non-nil means \\[pkgbuild-tar] reads the tar command to use."
+  "*Non-nil means \\[pkgbuild-sum] reads the tar command to use."
   :type 'boolean
   :group 'pkgbuild)
 
-(defcustom pkgbuild-makepkg-command "makepkg -m -f "
-  "Command to create an ArchLinux package."
+(defcustom pkgbuild-makepkg-command "buildpkg-world "
+  "Command to create an ArtixLinux package."
   :type 'string
   :group 'pkgbuild)
 
@@ -246,11 +244,6 @@ value of `user-mail-address'."
 
 (defcustom pkgbuild-source-directory-locations ".:src:/var/cache/pacman/src"
   "Search path for PKGBUILD source files."
-  :type 'string
-  :group 'pkgbuild)
-
-(defcustom pkgbuild-sums-command "makepkg -g 2>/dev/null"
-  "Shell command to generate *sums lines."
   :type 'string
   :group 'pkgbuild)
 
@@ -284,9 +277,8 @@ Otherwise, it saves all modified buffers without asking."
   (setq pkgbuild-mode-map (make-sparse-keymap))
   (define-key pkgbuild-mode-map "\C-c\C-r"  'pkgbuild-increase-release-tag)
   (define-key pkgbuild-mode-map "\C-c\C-b" 'pkgbuild-makepkg)
-  (define-key pkgbuild-mode-map "\C-c\C-a" 'pkgbuild-tar)
+  (define-key pkgbuild-mode-map "\C-c\C-a" 'pkgbuild-sum)
   (define-key pkgbuild-mode-map "\C-c\C-u" 'pkgbuild-browse-url)
-  (define-key pkgbuild-mode-map "\C-c\C-m" 'pkgbuild-update-sums-line)
   (define-key pkgbuild-mode-map "\C-c\C-s" 'pkgbuild-update-srcinfo)
   (define-key pkgbuild-mode-map "\C-c\C-e" 'pkgbuild-etags))
 
@@ -354,33 +346,6 @@ REPORT-FN is flymake's callback function."
 	  name-local))))
    locations))
 
-(defun pkgbuild-sums-line ()
-  "Calculate *sums=() line in PKGBUILD."
-  (shell-command-to-string pkgbuild-sums-command))
-
-(defun pkgbuild-update-sums-line ()
-  "Update the sums line in a PKGBUILD."
-  (interactive)
-  (unless (file-readable-p "PKGBUILD")
-    (error "Missing PKGBUILD"))
-  (unless (pkgbuild-syntax-check)
-    (error "Syntax Error"))
-  (pkgbuild-flymkake-check					;FIXME: misuse of flymake
-   (lambda (diagnostics)
-     (unless diagnostics
-       (save-excursion
-	 (goto-char (point-min))
-	 (while (re-search-forward "^[[:space:]]*\\\(md\\\|sha\\\)[[:digit:]]+sums\\\(_[^=]+\\\)?=([^()]*)[ \f\t\r\v]*\n?" (point-max) t) ;sum line exists
-	   (delete-region (match-beginning 0) (match-end 0)))
-	 (goto-char (point-max))
-	 (if (re-search-backward "^[[:space:]]*source\\\(_[^=]+\\\)?=([^()]*)" (point-min) t)
-	     (progn
-	       (goto-char (match-end 0))
-	       (insert "\n"))
-	   (error "Missing source line")
-	   (goto-char (point-max)))
-	 (insert (pkgbuild-trim-right (pkgbuild-sums-line))))))))
-
 (defun pkgbuild-update-srcinfo ()
   "Update .SRCINFO."
   (interactive)
@@ -393,15 +358,6 @@ REPORT-FN is flymake's callback function."
    (concat "pkgbuild-mode version "
 	   pkgbuild-mode-version
 	   " by Juergen Hoetzel, <juergen@hoetzel.info>")))
-
-(defun pkgbuild-update-sums-line-hook ()
-  "Update sum lines if the file was modified."
-  (if (and pkgbuild-update-sums-on-save (not pkgbuild-in-hook-recursion))
-      (progn
-	(setq pkgbuild-in-hook-recursion t)
-	(save-buffer)			;always save BUFFER 2 times so we get the correct sums in this hook
-	(setq pkgbuild-in-hook-recursion nil)
-	(pkgbuild-update-sums-line))))
 
 (defun pkgbuild-initialize ()
   "Create a default pkgbuild if one does not exist or is empty."
@@ -499,7 +455,7 @@ command."
 	    (setq err-p t)))
       (cl-values err-p line))))
 
-(defun pkgbuild-tarball-files ()
+(defun pkgbuild-sumball-files ()
   "Return a list of required files for the tarball package."
   (cons "PKGBUILD"
 	(cl-remove-if (lambda (x) (string-match "^\\(https?\\|ftp\\)://" x)) (split-string (shell-command-to-string "bash -c '. PKGBUILD 2>/dev/null && echo ${source[@]} $install'")))))
@@ -509,12 +465,12 @@ command."
   (shell-command-to-string
    "bash -c 'source PKGBUILD 2>/dev/null && echo -n ${pkgname}'"))
 
-(defun pkgbuild-tar (command)
+(defun pkgbuild-sum (command)
   "Run COMMAND to build a tarball containing all source files."
   (interactive
-   (list (read-from-minibuffer "tar command: "
-			       "makepkg --source -f"
-			       nil nil '(pkgbuild-tar-history . 1))))
+   (list (read-from-minibuffer "command: "
+			       "updpkgsums"
+			       nil nil '(pkgbuild-sum-history . 1))))
   (let ((pkgbuild-buffer-name (generate-new-buffer "*tar*")))
     (save-some-buffers (not pkgbuild-ask-about-save) nil)
     (pkgbuild-process-check pkgbuild-buffer-name)
@@ -548,8 +504,6 @@ with no args, if that value is non-nil."
   (set (make-local-variable 'compile-command) pkgbuild-makepkg-command)
   (sh-set-shell "/bin/bash")
   (easy-menu-add pkgbuild-mode-menu)
-  ;; This does not work because makepkg req. saved file
-  (add-hook 'write-file-functions 'pkgbuild-update-sums-line-hook nil t)
   (unless (memq 'pkgbuild-flymkake-check flymake-diagnostic-functions)
     (make-local-variable 'flymake-diagnostic-functions)
     (push 'pkgbuild-flymkake-check flymake-diagnostic-functions))
