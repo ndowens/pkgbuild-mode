@@ -48,8 +48,8 @@
 ;; Fix PKGBUILD template: Use $srcdir (Thanks amagura)
 
 ;; 0.12
-;; pkgbuild-tar: Use "makepkg --source" instead of using a custom tar command
-;; pkgbuild-tar: Use unique output buffers
+;; pkgbuild-sum: Use "makepkg --source" instead of using a custom tar command
+;; pkgbuild-sum: Use unique output buffers
 
 ;; 0.11
 ;; Support Sources renaming: https://wiki.archlinux.org/index.php/PKGBUILD#source
@@ -60,7 +60,7 @@
 ;; made the calculation of sums generic (use makepkg.conf setting)
 
 ;; 0.9
-;;    fixed `pkgbuild-tar' (empty directory name: thanks Stefan Husmann)
+;;    fixed `pkgbuild-sum' (empty directory name: thanks Stefan Husmann)
 ;;    new custom variable: pkgbuild-template
 ;;    code cleanup
 
@@ -102,7 +102,7 @@
 ;; 0.3
 ;;   Update md5sums line when saving PKGBUILD
 ;;     (Can be disabled via custom variable [pkgbuild-update-md5sums-on-save])
-;;   New interactive function pkgbuild-tar to create Source Tarball (C-c C-a)
+;;   New interactive function pkgbuild-sum to create Source Tarball (C-c C-a)
 ;;     (Usefull for AUR uploads)
 ;;   Insert warn-messages in md5sums line when source files are not present
 ;;   Several bug fixes
@@ -120,12 +120,11 @@
 
 (defconst pkgbuild-mode-menu
   (purecopy '("PKGBUILD"
-	      ["Update checksum"	      pkgbuild-tar		  t]
+	      ["Update checksum"	      pkgbuild-sum		  t]
 	      ["Browse url" pkgbuild-browse-url t]
 	      ["Increase release tag"	 pkgbuild-increase-release-tag t]
 	      "---"
-	      ("Build package"
-	       ["Build binary package"	  pkgbuild-makepkg	       t])
+	      ["Build binary package"	  pkgbuild-makepkg	       t]
 	      "---"
 	      ["Creates TAGS file"	   pkgbuild-etags	t]
 	      "---"
@@ -221,7 +220,7 @@ Otherwise, \\[pkgbuild-makepkg] just uses the value of `pkgbuild-makepkg-command
   :group 'pkgbuild)
 
 (defcustom pkgbuild-read-tar-command t
-  "*Non-nil means \\[pkgbuild-tar] reads the tar command to use."
+  "*Non-nil means \\[pkgbuild-sum] reads the tar command to use."
   :type 'boolean
   :group 'pkgbuild)
 
@@ -278,7 +277,7 @@ Otherwise, it saves all modified buffers without asking."
   (setq pkgbuild-mode-map (make-sparse-keymap))
   (define-key pkgbuild-mode-map "\C-c\C-r"  'pkgbuild-increase-release-tag)
   (define-key pkgbuild-mode-map "\C-c\C-b" 'pkgbuild-makepkg)
-  (define-key pkgbuild-mode-map "\C-c\C-a" 'pkgbuild-tar)
+  (define-key pkgbuild-mode-map "\C-c\C-a" 'pkgbuild-sum)
   (define-key pkgbuild-mode-map "\C-c\C-u" 'pkgbuild-browse-url)
   (define-key pkgbuild-mode-map "\C-c\C-s" 'pkgbuild-update-srcinfo)
   (define-key pkgbuild-mode-map "\C-c\C-e" 'pkgbuild-etags))
@@ -456,7 +455,7 @@ command."
 	    (setq err-p t)))
       (cl-values err-p line))))
 
-(defun pkgbuild-tarball-files ()
+(defun pkgbuild-sumball-files ()
   "Return a list of required files for the tarball package."
   (cons "PKGBUILD"
 	(cl-remove-if (lambda (x) (string-match "^\\(https?\\|ftp\\)://" x)) (split-string (shell-command-to-string "bash -c '. PKGBUILD 2>/dev/null && echo ${source[@]} $install'")))))
@@ -466,12 +465,12 @@ command."
   (shell-command-to-string
    "bash -c 'source PKGBUILD 2>/dev/null && echo -n ${pkgname}'"))
 
-(defun pkgbuild-tar (command)
+(defun pkgbuild-sum (command)
   "Run COMMAND to build a tarball containing all source files."
   (interactive
-   (list (read-from-minibuffer "tar command: "
+   (list (read-from-minibuffer "command: "
 			       "updpkgsums"
-			       nil nil '(pkgbuild-tar-history . 1))))
+			       nil nil '(pkgbuild-sum-history . 1))))
   (let ((pkgbuild-buffer-name (generate-new-buffer "*tar*")))
     (save-some-buffers (not pkgbuild-ask-about-save) nil)
     (pkgbuild-process-check pkgbuild-buffer-name)
