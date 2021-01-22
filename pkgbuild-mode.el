@@ -2,11 +2,11 @@
 
 ;; Copyright (C) 2005-2021 Juergen Hoetzel
 ;;
-;; Author: Juergen Hoetzel <juergen@hoetzel.info>
-;; Maintainer: Juergen Hoetzel <juergen@hoetzel.info>
-;; URL: https://github.com/juergenhoetzel/pkgbuild-mode
+;; Original author: Juergen Hoetzel <juergen@hoetzel.info>
+;; Maintainer: Nathan <ndowens@artixlinux.org>
+;; URL: https://github.com/ndowens/pkgbuild-mode
 ;; Package-Requires: ((emacs "26.1"))
-;; Version: 1.0-snapshot
+;; Version: 1.0.1-snapshot
 ;; Keywords: languages
 
 ;; This program is free software; you can redistribute it and/or
@@ -126,6 +126,16 @@
 	      "---"
 	      ["Build binary package"	  pkgbuild-makepkg	       t]
 	      "---"
+	      ("Push to stable repos"
+	       ["core"			  (prepo core)				t]
+	       ["world"			  (prepo extra)			t]
+	       ["community"		  (prepo community)			t])
+	      ("Push to gremlin repos"
+	       ["community-gremlins"	  (prepo community-testing)		t]
+	       ["gremlins"		  (prepo testing)			t])
+	      ("Push to goblins repos"
+	       ["community-goblins"	  (prepo community-staging)		t]
+	       ["goblins"		  (prepo goblins)			t])
 	      ["Creates TAGS file"	   pkgbuild-etags	t]
 	      "---"
 	      ["About pkgbuild-mode"	     pkgbuild-about-pkgbuild-mode	t])))
@@ -527,6 +537,12 @@ The TAGS file is also immediately visited with `visit-tags-table'."
     (message "Running etags to create TAGS file: %s" cmd)
     (shell-command cmd)
     (visit-tags-table etags-file)))
+
+(setq default-directory "~/artools-workspace/artixlinux")
+
+(defun prepo (rname)
+  "Push to repo."
+  )
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("/PKGBUILD\\'" . pkgbuild-mode))
