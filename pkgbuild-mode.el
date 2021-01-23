@@ -127,16 +127,17 @@
 	      ["Build binary package"	  pkgbuild-makepkg	       t]
 	      "---"
 	      ("Push to stable repos"
-	       ["core"			  (prepo core)				t]
-	       ["world"			  (prepo extra)			t]
-	       ["community"		  (prepo community)			t])
+	       ["core"			  (setq rname "corepkg -up")				t]
+	       ["world"			  (setq rname "extrapkg -up")			t]
+	       ["community"		  (setq rname "communitypkg -up")			t])
 	      ("Push to gremlin repos"
-	       ["community-gremlins"	  (prepo community-testing)		t]
-	       ["gremlins"		  (prepo testing)			t])
+	       ["community-gremlins"	  (setq "community-testingpkg -up")		t]
+	       ["gremlins"		  (setq "testingpkg -up")			t])
 	      ("Push to goblins repos"
-	       ["community-goblins"	  (prepo community-staging)		t]
-	       ["goblins"		  (prepo goblins)			t])
-	      ["Creates TAGS file"	   pkgbuild-etags	t]
+	       ["community-goblins"	  (setq "community-stagingpkg -up")		t]
+	       ["goblins"		  (setq "stagingpkg -up")			t]
+	       ["rebuild"     		  (setq "rebuildpkg -up")			t])
+	      ["Creates TAGS file"	  pkgbuild-etags				t]
 	      "---"
 	      ["About pkgbuild-mode"	     pkgbuild-about-pkgbuild-mode	t])))
 
@@ -538,11 +539,11 @@ The TAGS file is also immediately visited with `visit-tags-table'."
     (shell-command cmd)
     (visit-tags-table etags-file)))
 
-(setq default-directory "~/artools-workspace/artixlinux")
-
 (defun prepo (rname)
-  "Push to repo."
-  )
+  "Push to RNAME."
+  	(shell-cd "~/artools-workspace/artixlinux")
+  	(setq pkgs (concat rname  pkgbuild-name))
+	(shell-command pkgs))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("/PKGBUILD\\'" . pkgbuild-mode))
