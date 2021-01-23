@@ -542,8 +542,9 @@ The TAGS file is also immediately visited with `visit-tags-table'."
 (defun prepo (rname)
   "Push to RNAME."
   (shell-cd "~/artools-workspace/artixlinux")
-  (setq pkgs (concat rname  pkgbuild-pkgname))
-  (shell-command pkgs))
+  (interactive
+  (list (read-from-minibuffer "command:" (concat rname  pkgbuild-pkgname))))
+  (shell-command (concat rname  pkgbuild-pkgname)))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("/PKGBUILD\\'" . pkgbuild-mode))
