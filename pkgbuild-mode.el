@@ -115,6 +115,7 @@
 (require 'compile)
 (require 'tramp)
 (require 'flymake)
+(require 'keychain-environment)
 
 (defconst pkgbuild-mode-version "0.11.1" "Version of `pkgbuild-mode'.")
 
@@ -127,16 +128,16 @@
 	      ["Build binary package"	  pkgbuild-makepkg	       			t]
 	      "---"
 	      ("Push to stable repos"
-	       ["core"			  (prepo "corepkg -up" (pkgbuild-pkgname))				t]
-	       ["world"			  (prepo "extrapkg -up")			t]
+	       ["core"			  (prepo "corepkg -up" (pkgbuild-pkgname))			t]
+	       ["world"			  (prepo "extrapkg -up" (pkgbuild-pkgname))			t]
 	       ["community"		  (prepo "communitypkg -up" (pkgbuild-pkgname))			t])
 	      ("Push to gremlin repos"
-	       ["community-gremlins"	  (prepo "community-testingpkg -up")		t]
-	       ["gremlins"		  (prepo "testingpkg -up")			t])
+	       ["community-gremlins"	  (prepo "community-testingpkg -up" (pkgbuild-pkgname))		t]
+	       ["gremlins"		  (prepo "testingpkg -up" (pkgbuild-pkgname))			t])
 	      ("Push to goblins repos"
-	       ["community-goblins"	  (prepo "community-stagingpkg -up")		t]
-	       ["goblins"		  (prepo "stagingpkg -up")			t]
-	       ["rebuild"     		  (prepo "rebuildpkg -up")			t])
+	       ["community-goblins"	  (prepo "community-stagingpkg -up" (pkgbuild-pkgname))		t]
+	       ["goblins"		  (prepo "stagingpkg -up" (pkgbuild-pkgname))			t]
+	       ["rebuild"     		  (prepo "rebuildpkg -up" (pkgbuild-pkgname))			t])
 	      ["Creates TAGS file"	  pkgbuild-etags				t]
 	      "---"
 	      ["About pkgbuild-mode"	  pkgbuild-about-pkgbuild-mode			t])))
@@ -540,10 +541,9 @@ The TAGS file is also immediately visited with `visit-tags-table'."
     (visit-tags-table etags-file)))
 
 (defun prepo (rname pkgname)
-  "Push PKGNAME to RNAME and use ssh-agent."
+  "Push PKGNAME to RNAME."
   (defvar pkg (shell-command-to-string (concat rname  pkgname)))
-  (shell-command "ssh-agent " pkg)
-  )
+  (shell-command pkg))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("/PKGBUILD\\'" . pkgbuild-mode))
