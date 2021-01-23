@@ -120,26 +120,26 @@
 
 (defconst pkgbuild-mode-menu
   (purecopy '("PKGBUILD"
-	      ["Update checksum"	      pkgbuild-sum		  t]
-	      ["Browse url" pkgbuild-browse-url t]
-	      ["Increase release tag"	 pkgbuild-increase-release-tag t]
+	      ["Update checksum"	  pkgbuild-sum		  			t]
+	      ["Browse url" 		  pkgbuild-browse-url 				t]
+	      ["Increase release tag"	  pkgbuild-increase-release-tag 		t]
 	      "---"
-	      ["Build binary package"	  pkgbuild-makepkg	       t]
+	      ["Build binary package"	  pkgbuild-makepkg	       			t]
 	      "---"
 	      ("Push to stable repos"
-	       ["core"			  (setq rname "corepkg -up")				t]
-	       ["world"			  (setq rname "extrapkg -up")			t]
-	       ["community"		  (setq rname "communitypkg -up")			t])
+	       ["core"			  (prepo "corepkg -up" (pkgbuild-pkgname))				t]
+	       ["world"			  (prepo "extrapkg -up")			t]
+	       ["community"		  (prepo "communitypkg -up" (pkgbuild-pkgname))			t])
 	      ("Push to gremlin repos"
-	       ["community-gremlins"	  (setq "community-testingpkg -up")		t]
-	       ["gremlins"		  (setq "testingpkg -up")			t])
+	       ["community-gremlins"	  (prepo "community-testingpkg -up")		t]
+	       ["gremlins"		  (prepo "testingpkg -up")			t])
 	      ("Push to goblins repos"
-	       ["community-goblins"	  (setq "community-stagingpkg -up")		t]
-	       ["goblins"		  (setq "stagingpkg -up")			t]
-	       ["rebuild"     		  (setq "rebuildpkg -up")			t])
+	       ["community-goblins"	  (prepo "community-stagingpkg -up")		t]
+	       ["goblins"		  (prepo "stagingpkg -up")			t]
+	       ["rebuild"     		  (prepo "rebuildpkg -up")			t])
 	      ["Creates TAGS file"	  pkgbuild-etags				t]
 	      "---"
-	      ["About pkgbuild-mode"	     pkgbuild-about-pkgbuild-mode	t])))
+	      ["About pkgbuild-mode"	  pkgbuild-about-pkgbuild-mode			t])))
 
 ;; Local variables
 
@@ -471,7 +471,7 @@ command."
   (cons "PKGBUILD"
 	(cl-remove-if (lambda (x) (string-match "^\\(https?\\|ftp\\)://" x)) (split-string (shell-command-to-string "bash -c '. PKGBUILD 2>/dev/null && echo ${source[@]} $install'")))))
 
-(defun pkgbuild-pkgname ()
+  (defun pkgbuild-pkgname ()
   "Return package name."
   (shell-command-to-string
    "bash -c 'source PKGBUILD 2>/dev/null && echo -n ${pkgname}'"))
@@ -539,12 +539,11 @@ The TAGS file is also immediately visited with `visit-tags-table'."
     (shell-command cmd)
     (visit-tags-table etags-file)))
 
-(defun prepo (rname)
-  "Push to RNAME."
-  (shell-cd "~/artools-workspace/artixlinux")
-  (interactive
-  (list (read-from-minibuffer "command:" (concat rname  pkgbuild-pkgname))))
-  (shell-command (concat rname  pkgbuild-pkgname)))
+(defun prepo (rname pkgname)
+  "Push PKGNAME to RNAME and use ssh-agent."
+  (defvar pkg (shell-command-to-string (concat rname  pkgname)))
+  (shell-command "ssh-agent " pkg)
+  )
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("/PKGBUILD\\'" . pkgbuild-mode))
