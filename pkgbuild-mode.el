@@ -115,7 +115,6 @@
 (require 'compile)
 (require 'tramp)
 (require 'flymake)
-(require 'keychain-environment)
 
 (defconst pkgbuild-mode-version "0.11.1" "Version of `pkgbuild-mode'.")
 
